@@ -1,0 +1,3695 @@
+--// 🌸 SAKURA • VIP
+--// ONE LOCAL SCRIPT
+
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Stats = game:GetService("Stats")
+
+local LP = Players.LocalPlayer
+local PlayerGui = LP:WaitForChild("PlayerGui")
+
+--==================================================
+-- SETTINGS
+--==================================================
+
+local KEY = "675242"
+local DISCORD_LINK = "https://discord.gg/etfy9Ctun"
+
+local BAT_DISTANCE = 2.55
+local BAT_HEIGHT = 0.5
+
+local RESET_UP = 10000
+local RESET_DOWN = 1000000000000000000000
+
+--==================================================
+-- CHARACTER
+--==================================================
+
+local Character
+local Humanoid
+local Root
+
+local function RefreshCharacter()
+	Character = LP.Character or LP.CharacterAdded:Wait()
+	Humanoid = Character:WaitForChild("Humanoid")
+	Root = Character:WaitForChild("HumanoidRootPart")
+end
+
+RefreshCharacter()
+
+--==================================================
+-- STATES
+--==================================================
+
+local BatEnabled = false
+local ESPEnabled = false
+local TracersEnabled = false
+local AntiDieEnabled = false
+
+local Loaded = false
+local InstaBusy = false
+local TermsAccepted = false
+
+local MainGui
+local MainFrame
+local ReopenButton
+
+local Pages = {}
+
+local ON_COLOR = Color3.fromRGB(45,155,85)
+local OFF_COLOR = Color3.fromRGB(55,42,65)
+local PINK_COLOR = Color3.fromRGB(190,85,190)
+
+--==================================================
+-- CHARACTER DATA
+--==================================================
+
+local function GetCharacterData(player)
+	if not player or player == LP then
+		return nil
+	end
+
+	local char = player.Character
+
+	if not char then
+		return nil
+	end
+
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local root = char:FindFirstChild("HumanoidRootPart")
+
+	if hum and root and hum.Health > 0 then
+		return char, hum, root
+	end
+
+	return nil
+end
+
+local function GetNearestPlayer()
+	if not Root then
+		return nil
+	end
+
+	local nearest = nil
+	local nearestDistance = math.huge
+
+	for _, player in ipairs(Players:GetPlayers()) do
+		local _, hum, targetRoot = GetCharacterData(player)
+
+		if hum and targetRoot then
+			local distance =
+				(Root.Position - targetRoot.Position).Magnitude
+
+			if distance < nearestDistance then
+				nearestDistance = distance
+				nearest = player
+			end
+		end
+	end
+
+	return nearest
+end
+
+--==================================================
+-- DISCORD TAG
+--==================================================
+
+local function AddDiscordTag(character)
+	if not character then
+		return
+	end
+
+	local head = character:FindFirstChild("Head")
+
+	if not head then
+		return
+	end
+
+	local old = head:FindFirstChild("SakuraDiscordTag")
+
+	if old then
+		old:Destroy()
+	end
+
+	local billboard = Instance.new("BillboardGui")
+
+	billboard.Name = "SakuraDiscordTag"
+	billboard.Size = UDim2.new(0,180,0,32)
+	billboard.StudsOffset = Vector3.new(0,2.8,0)
+	billboard.AlwaysOnTop = true
+	billboard.Parent = head
+
+	local label = Instance.new("TextLabel")
+
+	label.Size = UDim2.fromScale(1,1)
+	label.BackgroundTransparency = 1
+
+	label.Text = "discord.gg/etfy9Ctun"
+
+	label.TextScaled = true
+	label.Font = Enum.Font.GothamBold
+	label.TextStrokeTransparency = 0.3
+
+	label.Parent = billboard
+
+	task.spawn(function()
+
+		local t = 0
+
+		while billboard.Parent do
+
+			t += task.wait(0.03)
+
+			local alpha =
+				(math.sin(t * 2) + 1) / 2
+
+			local purple =
+				Color3.fromRGB(190,70,255)
+
+			local white =
+				Color3.fromRGB(255,255,255)
+
+			label.TextColor3 =
+				purple:Lerp(white,alpha)
+		end
+	end)
+end
+
+--==================================================
+-- BAT TP
+--==================================================
+
+local function UpdateBat()
+
+	if not BatEnabled then
+		return
+	end
+
+	if not Root or not Root.Parent then
+		return
+	end
+
+	local target =
+		GetNearestPlayer()
+
+	if not target then
+		return
+	end
+
+	local _, hum, targetRoot =
+		GetCharacterData(target)
+
+	if not hum or not targetRoot then
+		return
+	end
+
+	local position =
+		targetRoot.Position
+		- targetRoot.CFrame.LookVector * BAT_DISTANCE
+		+ Vector3.new(0,BAT_HEIGHT,0)
+
+	Root.CFrame =
+		CFrame.lookAt(
+			position,
+			targetRoot.Position
+		)
+
+	Root.AssemblyLinearVelocity =
+		Vector3.zero
+end
+
+--==================================================
+-- RESET MESSAGE
+--==================================================
+
+local function ShowResetComplete()
+
+	local old =
+		PlayerGui:FindFirstChild(
+			"SakuraResetMessage"
+		)
+
+	if old then
+		old:Destroy()
+	end
+
+	local gui =
+		Instance.new("ScreenGui")
+
+	gui.Name =
+		"SakuraResetMessage"
+
+	gui.ResetOnSpawn = false
+
+	gui.Parent = PlayerGui
+
+	local label =
+		Instance.new("TextLabel")
+
+	label.Size =
+		UDim2.new(0,220,0,40)
+
+	label.Position =
+		UDim2.new(0,15,0,15)
+
+	label.BackgroundColor3 =
+		Color3.fromRGB(35,25,42)
+
+	label.BackgroundTransparency = 0.1
+
+	label.BorderSizePixel = 0
+
+	label.Text =
+		"✓ RESET COMPLET"
+
+	label.TextColor3 =
+		Color3.fromRGB(150,255,170)
+
+	label.Font =
+		Enum.Font.GothamBold
+
+	label.TextSize = 15
+
+	label.Parent = gui
+
+	local corner =
+		Instance.new("UICorner")
+
+	corner.CornerRadius =
+		UDim.new(0,9)
+
+	corner.Parent = label
+
+	task.delay(2.5,function()
+
+		if gui and gui.Parent then
+			gui:Destroy()
+		end
+
+	end)
+end
+
+--==================================================
+-- INSTA RESET
+--==================================================
+
+local function InstaReset()
+
+	if InstaBusy then
+		return
+	end
+
+	if not Root or not Root.Parent then
+		return
+	end
+
+	InstaBusy = true
+
+	local startCFrame =
+		Root.CFrame
+
+	-- 10 000 ВВЕРХ
+	Root.CFrame =
+		startCFrame +
+		Vector3.new(
+			0,
+			RESET_UP,
+			0
+		)
+
+	Root.AssemblyLinearVelocity =
+		Vector3.zero
+
+	task.wait(0.05)
+
+	-- 1 000 000 000 000 000 000 000 ВНИЗ
+	Root.CFrame =
+		Root.CFrame +
+		Vector3.new(
+			0,
+			-RESET_DOWN,
+			0
+		)
+
+	Root.AssemblyLinearVelocity =
+		Vector3.zero
+
+	task.wait(0.15)
+
+	ShowResetComplete()
+
+	InstaBusy = false
+end
+
+--==================================================
+-- ESP
+--==================================================
+
+local function CreateESP(player)
+
+	if player == LP then
+		return
+	end
+
+	local char =
+		player.Character
+
+	if not char then
+		return
+	end
+
+	local old =
+		char:FindFirstChild(
+			"SakuraESP"
+		)
+
+	if old then
+		return
+	end
+
+	local highlight =
+		Instance.new("Highlight")
+
+	highlight.Name =
+		"SakuraESP"
+
+	highlight.FillColor =
+		Color3.fromRGB(
+			145,
+			145,
+			145
+		)
+
+	highlight.OutlineColor =
+		Color3.fromRGB(
+			220,
+			220,
+			220
+		)
+
+	highlight.FillTransparency =
+		0.55
+
+	highlight.OutlineTransparency =
+		0
+
+	highlight.DepthMode =
+		Enum.HighlightDepthMode.AlwaysOnTop
+
+	highlight.Parent =
+		char
+end
+
+local function RemoveESP(player)
+
+	local char =
+		player.Character
+
+	if not char then
+		return
+	end
+
+	local esp =
+		char:FindFirstChild(
+			"SakuraESP"
+		)
+
+	if esp then
+		esp:Destroy()
+	end
+end
+
+local function UpdateESP()
+
+	for _,player in ipairs(
+		Players:GetPlayers()
+	) do
+
+		if player ~= LP then
+
+			if ESPEnabled then
+				CreateESP(player)
+			else
+				RemoveESP(player)
+			end
+
+		end
+	end
+end
+
+--==================================================
+-- TRACERS
+--==================================================
+
+local TracerFolder
+
+local function GetTracerFolder()
+
+	if not TracerFolder
+		or not TracerFolder.Parent then
+
+		TracerFolder =
+			Instance.new("Folder")
+
+		TracerFolder.Name =
+			"SakuraTracers"
+
+		TracerFolder.Parent =
+			workspace
+	end
+
+	return TracerFolder
+end
+
+local function RemovePlayerTracer(player)
+
+	if not TracerFolder then
+		return
+	end
+
+	local beam =
+		TracerFolder:FindFirstChild(
+			"Tracer_" ..
+			player.UserId
+		)
+
+	if beam then
+		beam:Destroy()
+	end
+end
+
+local function CreateTracer(player)
+
+	if not TracersEnabled then
+		return
+	end
+
+	if player == LP then
+		return
+	end
+
+	if not Root or not Root.Parent then
+		return
+	end
+
+	local character =
+		player.Character
+
+	if not character then
+		return
+	end
+
+	local targetRoot =
+		character:FindFirstChild(
+			"HumanoidRootPart"
+		)
+
+	local targetHum =
+		character:FindFirstChildOfClass(
+			"Humanoid"
+		)
+
+	if not targetRoot
+		or not targetHum
+		or targetHum.Health <= 0 then
+
+		RemovePlayerTracer(player)
+
+		return
+	end
+
+	local folder =
+		GetTracerFolder()
+
+	local beamName =
+		"Tracer_" ..
+		player.UserId
+
+	local existing =
+		folder:FindFirstChild(
+			beamName
+		)
+
+	-- Проверяем, что существующая линия
+	-- действительно соединяет нужного игрока.
+	if existing then
+
+		if existing:IsA("Beam")
+			and existing.Attachment1
+			and existing.Attachment1.Parent
+				== targetRoot then
+
+			return
+		end
+
+		existing:Destroy()
+	end
+
+	--==================================================
+	-- LOCAL ATTACHMENT
+	--==================================================
+
+	local localAttachment =
+		Root:FindFirstChild(
+			"SakuraLocalTracer"
+		)
+
+	if not localAttachment then
+
+		localAttachment =
+			Instance.new("Attachment")
+
+		localAttachment.Name =
+			"SakuraLocalTracer"
+
+		localAttachment.Position =
+			Vector3.new(0,0,0)
+
+		localAttachment.Parent =
+			Root
+	end
+
+	--==================================================
+	-- TARGET ATTACHMENT
+	--==================================================
+
+	local targetAttachment =
+		targetRoot:FindFirstChild(
+			"SakuraTargetTracer_" ..
+			LP.UserId
+		)
+
+	if not targetAttachment then
+
+		targetAttachment =
+			Instance.new("Attachment")
+
+		targetAttachment.Name =
+			"SakuraTargetTracer_" ..
+			LP.UserId
+
+		targetAttachment.Position =
+			Vector3.new(0,0,0)
+
+		targetAttachment.Parent =
+			targetRoot
+	end
+
+	--==================================================
+	-- BEAM
+	--==================================================
+
+	local beam =
+		Instance.new("Beam")
+
+	beam.Name =
+		beamName
+
+	beam.Attachment0 =
+		localAttachment
+
+	beam.Attachment1 =
+		targetAttachment
+
+	beam.FaceCamera =
+		true
+
+	beam.Enabled =
+		true
+
+	beam.Width0 =
+		0.12
+
+	beam.Width1 =
+		0.12
+
+	beam.LightEmission =
+		1
+
+	beam.LightInfluence =
+		0
+
+	beam.Segments =
+		1
+
+	beam.Transparency =
+		NumberSequence.new(0)
+
+	beam.Color =
+		ColorSequence.new(
+			Color3.fromRGB(
+				255,
+				45,
+				45
+			)
+		)
+
+	beam.Parent =
+		folder
+end
+
+local function ClearTracers()
+
+	if TracerFolder then
+		TracerFolder:Destroy()
+		TracerFolder = nil
+	end
+
+	-- Удаляем локальные attachment'ы.
+	if Root then
+
+		local localAttachment =
+			Root:FindFirstChild(
+				"SakuraLocalTracer"
+			)
+
+		if localAttachment then
+			localAttachment:Destroy()
+		end
+	end
+
+	-- Удаляем target attachment'ы.
+	for _,player in ipairs(
+		Players:GetPlayers()
+	) do
+
+		local character =
+			player.Character
+
+		if character then
+
+			local targetRoot =
+				character:FindFirstChild(
+					"HumanoidRootPart"
+				)
+
+			if targetRoot then
+
+				local attachment =
+					targetRoot:FindFirstChild(
+						"SakuraTargetTracer_" ..
+						LP.UserId
+					)
+
+				if attachment then
+					attachment:Destroy()
+				end
+			end
+		end
+	end
+end
+
+local function UpdateTracers()
+
+	if not TracersEnabled then
+		ClearTracers()
+		return
+	end
+
+	if not Root or not Root.Parent then
+		return
+	end
+
+	for _,player in ipairs(
+		Players:GetPlayers()
+	) do
+
+		if player ~= LP then
+			CreateTracer(player)
+		end
+	end
+end
+
+--==================================================
+-- TRACER COLOR ANIMATION
+--==================================================
+
+task.spawn(function()
+
+	while true do
+
+		if TracersEnabled
+			and TracerFolder
+			and TracerFolder.Parent then
+
+			local timeValue =
+				os.clock() * 1.8
+
+			local alpha =
+				(math.sin(timeValue) + 1) / 2
+
+			local red =
+				Color3.fromRGB(
+					255,
+					45,
+					45
+				)
+
+			local white =
+				Color3.fromRGB(
+					255,
+					255,
+					255
+				)
+
+			local gray =
+				Color3.fromRGB(
+					145,
+					145,
+					145
+				)
+
+			local color
+
+			if alpha < 0.5 then
+
+				color =
+					red:Lerp(
+						white,
+						alpha * 2
+					)
+
+			else
+
+				color =
+					white:Lerp(
+						gray,
+						(alpha - 0.5) * 2
+					)
+			end
+
+			for _,object in ipairs(
+				TracerFolder:GetChildren()
+			) do
+
+				if object:IsA("Beam") then
+
+					object.Enabled = true
+
+					object.Color =
+						ColorSequence.new(
+							color
+						)
+				end
+			end
+		end
+
+		task.wait(0.025)
+	end
+end)
+
+--==================================================
+-- ANTI DIE
+--==================================================
+
+local function ApplyAntiDie()
+
+	if not Humanoid then
+		return
+	end
+
+	if AntiDieEnabled then
+
+		Humanoid.BreakJointsOnDeath =
+			false
+
+		pcall(function()
+
+			Humanoid:SetStateEnabled(
+				Enum.HumanoidStateType.Dead,
+				false
+			)
+
+		end)
+
+	else
+
+		Humanoid.BreakJointsOnDeath =
+			true
+
+		pcall(function()
+
+			Humanoid:SetStateEnabled(
+				Enum.HumanoidStateType.Dead,
+				true
+			)
+
+		end)
+	end
+end
+
+--==================================================
+-- TOGGLE BUTTON
+--==================================================
+
+local function UpdateToggle(
+	button,
+	enabled,
+	name
+)
+
+	if enabled then
+
+		button.Text =
+			"🟢 " ..
+			name ..
+			": ON"
+
+		button.BackgroundColor3 =
+			ON_COLOR
+
+	else
+
+		button.Text =
+			"🔴 " ..
+			name ..
+			": OFF"
+
+		button.BackgroundColor3 =
+			OFF_COLOR
+	end
+end
+
+local function CreateToggleButton(
+	parent,
+	name,
+	y,
+	getState,
+	setState
+)
+
+	local button =
+		Instance.new("TextButton")
+
+	button.Name =
+		name ..
+		"Button"
+
+	button.Size =
+		UDim2.new(
+			1,
+			-20,
+			0,
+			40
+		)
+
+	button.Position =
+		UDim2.new(
+			0,
+			10,
+			0,
+			y
+		)
+
+	button.BackgroundColor3 =
+		OFF_COLOR
+
+	button.BorderSizePixel =
+		0
+
+	button.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	button.Font =
+		Enum.Font.GothamBold
+
+	button.TextSize =
+		14
+
+	button.AutoButtonColor =
+		false
+
+	button.Parent =
+		parent
+
+	local corner =
+		Instance.new("UICorner")
+
+	corner.CornerRadius =
+		UDim.new(0,9)
+
+	corner.Parent =
+		button
+
+	UpdateToggle(
+		button,
+		getState(),
+		name
+	)
+
+	button.MouseButton1Click:Connect(
+		function()
+
+			local newState =
+				not getState()
+
+			setState(newState)
+
+			UpdateToggle(
+				button,
+				newState,
+				name
+			)
+		end
+	)
+
+	return button
+end
+
+--==================================================
+-- DRAG
+--==================================================
+
+local function MakeDraggable(
+	frame,
+	handle
+)
+
+	local dragging = false
+	local dragStart
+	local startPosition
+
+	handle.InputBegan:Connect(
+		function(input)
+
+			if input.UserInputType ==
+				Enum.UserInputType.MouseButton1
+				or input.UserInputType ==
+				Enum.UserInputType.Touch then
+
+				dragging = true
+
+				dragStart =
+					input.Position
+
+				startPosition =
+					frame.Position
+
+				input.Changed:Connect(
+					function()
+
+						if input.UserInputState ==
+							Enum.UserInputState.End then
+
+							dragging = false
+						end
+					end
+				)
+			end
+		end
+	)
+
+	UserInputService.InputChanged:Connect(
+		function(input)
+
+			if not dragging then
+				return
+			end
+
+			if input.UserInputType ==
+				Enum.UserInputType.MouseMovement
+				or input.UserInputType ==
+				Enum.UserInputType.Touch then
+
+				local delta =
+					input.Position -
+					dragStart
+
+				frame.Position =
+					UDim2.new(
+						startPosition.X.Scale,
+						startPosition.X.Offset +
+							delta.X,
+
+						startPosition.Y.Scale,
+						startPosition.Y.Offset +
+							delta.Y
+					)
+			end
+		end
+	)
+end
+
+--==================================================
+-- PERFORMANCE
+--==================================================
+
+local function CreatePerformancePanel()
+
+	if not MainGui then
+		return
+	end
+
+	local panel =
+		Instance.new("Frame")
+
+	panel.Name =
+		"Performance"
+
+	panel.Size =
+		UDim2.new(
+			0,
+			105,
+			0,
+			72
+		)
+
+	panel.Position =
+		UDim2.new(
+			1,
+			-115,
+			0,
+			15
+		)
+
+	panel.BackgroundColor3 =
+		Color3.fromRGB(
+			25,
+			20,
+			31
+		)
+
+	panel.BackgroundTransparency =
+		0.1
+
+	panel.BorderSizePixel =
+		0
+
+	panel.Parent =
+		MainGui
+
+	local corner =
+		Instance.new("UICorner")
+
+	corner.CornerRadius =
+		UDim.new(0,10)
+
+	corner.Parent =
+		panel
+
+	local label =
+		Instance.new("TextLabel")
+
+	label.Size =
+		UDim2.new(
+			1,
+			-10,
+			1,
+			-6
+		)
+
+	label.Position =
+		UDim2.new(
+			0,
+			5,
+			0,
+			3
+		)
+
+	label.BackgroundTransparency =
+		1
+
+	label.Text =
+		"FPS: --\nMS: --\nPING: --"
+
+	label.TextColor3 =
+		Color3.fromRGB(
+			235,
+			235,
+			235
+		)
+
+	label.Font =
+		Enum.Font.GothamBold
+
+	label.TextSize =
+		12
+
+	label.TextXAlignment =
+		Enum.TextXAlignment.Left
+
+	label.TextYAlignment =
+		Enum.TextYAlignment.Center
+
+	label.Parent =
+		panel
+
+	local frames = 0
+	local lastTime = os.clock()
+
+	local frameTimes = {}
+
+	RunService.RenderStepped:Connect(
+		function(dt)
+
+			if not panel.Parent then
+				return
+			end
+
+			frames += 1
+
+			table.insert(
+				frameTimes,
+				dt
+			)
+
+			if #frameTimes > 30 then
+				table.remove(
+					frameTimes,
+					1
+				)
+			end
+
+			local now =
+				os.clock()
+
+			if now - lastTime >= 0.5 then
+
+				local fps =
+					math.floor(
+						frames /
+						(now-lastTime)
+						+ 0.5
+					)
+
+				frames = 0
+				lastTime = now
+
+				local average = 0
+
+				for _,value in ipairs(
+					frameTimes
+				) do
+
+					average += value
+				end
+
+				if #frameTimes > 0 then
+					average /=
+						#frameTimes
+				end
+
+				local ms =
+					math.floor(
+						average * 1000
+						+ 0.5
+					)
+
+				local ping = "--"
+
+				pcall(function()
+
+					local network =
+						Stats.Network
+
+					local serverStats =
+						network.ServerStatsItem
+
+					local dataPing =
+						serverStats:FindFirstChild(
+							"Data Ping"
+						)
+
+					if dataPing then
+
+						local value =
+							dataPing:GetValue()
+
+						if value then
+
+							ping =
+								math.floor(
+									value + 0.5
+								)
+						end
+					end
+				end)
+
+				label.Text =
+					"FPS: " ..
+					fps ..
+					"\nMS: " ..
+					ms ..
+					"\nPING: " ..
+					ping ..
+					(
+						ping ~= "--"
+						and " ms"
+						or ""
+					)
+			end
+		end
+	)
+end
+
+--==================================================
+-- MAIN MENU
+--==================================================
+
+local function CreateMain()
+
+	MainGui =
+		Instance.new("ScreenGui")
+
+	MainGui.Name =
+		"SakuraVIP"
+
+	MainGui.ResetOnSpawn =
+		false
+
+	MainGui.Parent =
+		PlayerGui
+
+	-- MAIN FRAME
+	MainFrame =
+		Instance.new("Frame")
+
+	MainFrame.Size =
+		UDim2.new(
+			0,
+			310,
+			0,
+			300
+		)
+
+	MainFrame.Position =
+		UDim2.new(
+			0.5,
+			-155,
+			0.5,
+			-150
+		)
+
+	MainFrame.BackgroundColor3 =
+		Color3.fromRGB(
+			24,
+			19,
+			30
+		)
+
+	MainFrame.BorderSizePixel =
+		0
+
+	MainFrame.Parent =
+		MainGui
+
+	local frameCorner =
+		Instance.new("UICorner")
+
+	frameCorner.CornerRadius =
+		UDim.new(0,14)
+
+	frameCorner.Parent =
+		MainFrame
+
+	-- HEADER
+	local header =
+		Instance.new("Frame")
+
+	header.Size =
+		UDim2.new(
+			1,
+			0,
+			0,
+			45
+		)
+
+	header.BackgroundColor3 =
+		Color3.fromRGB(
+			39,
+			28,
+			48
+		)
+
+	header.BorderSizePixel =
+		0
+
+	header.Parent =
+		MainFrame
+
+	local headerCorner =
+		Instance.new("UICorner")
+
+	headerCorner.CornerRadius =
+		UDim.new(0,14)
+
+	headerCorner.Parent =
+		header
+
+	local title =
+		Instance.new("TextLabel")
+
+	title.Size =
+		UDim2.new(
+			1,
+			-50,
+			1,
+			0
+		)
+
+	title.Position =
+		UDim2.new(
+			0,
+			12,
+			0,
+			0
+		)
+
+	title.BackgroundTransparency =
+		1
+
+	title.Text =
+		"🌸 SAKURA • VIP"
+
+	title.TextColor3 =
+		Color3.fromRGB(
+			255,
+			190,
+			255
+		)
+
+	title.Font =
+		Enum.Font.GothamBold
+
+	title.TextSize =
+		16
+
+	title.TextXAlignment =
+		Enum.TextXAlignment.Left
+
+	title.Parent =
+		header
+
+	-- CLOSE
+	local close =
+		Instance.new("TextButton")
+
+	close.Size =
+		UDim2.new(
+			0,
+			35,
+			0,
+			35
+		)
+
+	close.Position =
+		UDim2.new(
+			1,
+			-40,
+			0,
+			5
+		)
+
+	close.BackgroundColor3 =
+		Color3.fromRGB(
+			80,
+			45,
+			80
+		)
+
+	close.Text =
+		"×"
+
+	close.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	close.Font =
+		Enum.Font.GothamBold
+
+	close.TextSize =
+		22
+
+	close.Parent =
+		header
+
+	local closeCorner =
+		Instance.new("UICorner")
+
+	closeCorner.CornerRadius =
+		UDim.new(0,9)
+
+	closeCorner.Parent =
+		close
+
+	MakeDraggable(
+		MainFrame,
+		header
+	)
+
+	-- REOPEN
+	ReopenButton =
+		Instance.new("TextButton")
+
+	ReopenButton.Size =
+		UDim2.new(
+			0,
+			55,
+			0,
+			55
+		)
+
+	ReopenButton.Position =
+		UDim2.new(
+			0,
+			15,
+			0.5,
+			-27
+		)
+
+	ReopenButton.BackgroundColor3 =
+		Color3.fromRGB(
+			45,
+			28,
+			52
+		)
+
+	ReopenButton.Text =
+		"🌸"
+
+	ReopenButton.TextSize =
+		25
+
+	ReopenButton.Parent =
+		MainGui
+
+	local rc =
+		Instance.new("UICorner")
+
+	rc.CornerRadius =
+		UDim.new(1,0)
+
+	rc.Parent =
+		ReopenButton
+
+	ReopenButton.Visible =
+		false
+
+	close.MouseButton1Click:Connect(
+		function()
+
+			MainFrame.Visible =
+				false
+
+			ReopenButton.Visible =
+				true
+		end
+	)
+
+	ReopenButton.MouseButton1Click:Connect(
+		function()
+
+			MainFrame.Visible =
+				true
+
+			ReopenButton.Visible =
+				false
+		end
+	)
+
+	--==================================================
+	-- TABS
+	--==================================================
+
+	local tabFrame =
+		Instance.new("Frame")
+
+	tabFrame.Size =
+		UDim2.new(
+			1,
+			-20,
+			0,
+			35
+		)
+
+	tabFrame.Position =
+		UDim2.new(
+			0,
+			10,
+			0,
+			52
+		)
+
+	tabFrame.BackgroundTransparency =
+		1
+
+	tabFrame.Parent =
+		MainFrame
+
+	local tabNames = {
+		"BAT",
+		"VISUAL",
+		"OTHER",
+		"CREATOR"
+	}
+
+	for i,name in ipairs(tabNames) do
+
+		local tab =
+			Instance.new("TextButton")
+
+		tab.Size =
+			UDim2.new(
+				0.25,
+				-3,
+				1,
+				0
+			)
+
+		tab.Position =
+			UDim2.new(
+				(i-1)*0.25,
+				i > 1 and 2 or 0,
+				0,
+				0
+			)
+
+		tab.BackgroundColor3 =
+			Color3.fromRGB(
+				48,
+				36,
+				55
+			)
+
+		tab.BorderSizePixel =
+			0
+
+		tab.Text =
+			name
+
+		tab.TextColor3 =
+			Color3.fromRGB(
+				255,
+				255,
+				255
+			)
+
+		tab.Font =
+			Enum.Font.GothamBold
+
+		tab.TextSize =
+			10
+
+		tab.Parent =
+			tabFrame
+
+		local tc =
+			Instance.new("UICorner")
+
+		tc.CornerRadius =
+			UDim.new(0,7)
+
+		tc.Parent =
+			tab
+
+		local page =
+			Instance.new("ScrollingFrame")
+
+		page.Size =
+			UDim2.new(
+				1,
+				-20,
+				1,
+				-100
+			)
+
+		page.Position =
+			UDim2.new(
+				0,
+				10,
+				0,
+				95
+			)
+
+		page.BackgroundTransparency =
+			1
+
+		page.BorderSizePixel =
+			0
+
+		page.ScrollBarThickness =
+			3
+
+		page.CanvasSize =
+			UDim2.new(
+				0,
+				0,
+				0,
+				0
+			)
+
+		page.Visible =
+			i == 1
+
+		page.Parent =
+			MainFrame
+
+		Pages[name] =
+			page
+
+		tab.MouseButton1Click:Connect(
+			function()
+
+				for _,p in pairs(Pages) do
+					p.Visible = false
+				end
+
+				page.Visible = true
+			end
+		)
+	end
+
+	--==================================================
+	-- BAT
+	--==================================================
+
+	local batPage =
+		Pages.BAT
+
+	CreateToggleButton(
+		batPage,
+		"BAT TP",
+		10,
+		function()
+			return BatEnabled
+		end,
+		function(value)
+			BatEnabled = value
+		end
+	)
+
+	batPage.CanvasSize =
+		UDim2.new(
+			0,
+			0,
+			0,
+			70
+		)
+
+	--==================================================
+	-- VISUAL
+	--==================================================
+
+	local visualPage =
+		Pages.VISUAL
+
+	CreateToggleButton(
+		visualPage,
+		"ESP",
+		10,
+		function()
+			return ESPEnabled
+		end,
+		function(value)
+
+			ESPEnabled =
+				value
+
+			UpdateESP()
+		end
+	)
+
+	CreateToggleButton(
+		visualPage,
+		"TRACERS",
+		60,
+		function()
+			return TracersEnabled
+		end,
+		function(value)
+
+			TracersEnabled =
+				value
+
+			if value then
+				UpdateTracers()
+			else
+				ClearTracers()
+			end
+		end
+	)
+
+	visualPage.CanvasSize =
+		UDim2.new(
+			0,
+			0,
+			0,
+			125
+		)
+
+	--==================================================
+	-- OTHER
+	--==================================================
+
+	local otherPage =
+		Pages.OTHER
+
+	CreateToggleButton(
+		otherPage,
+		"ANTI DIE",
+		10,
+		function()
+			return AntiDieEnabled
+		end,
+		function(value)
+
+			AntiDieEnabled =
+				value
+
+			ApplyAntiDie()
+		end
+	)
+
+	local reset =
+		Instance.new("TextButton")
+
+	reset.Size =
+		UDim2.new(
+			1,
+			-20,
+			0,
+			40
+		)
+
+	reset.Position =
+		UDim2.new(
+			0,
+			10,
+			0,
+			60
+		)
+
+	reset.BackgroundColor3 =
+		Color3.fromRGB(
+			130,
+			60,
+			80
+		)
+
+	reset.BorderSizePixel =
+		0
+
+	reset.Text =
+		"⚡ INSTA RESET"
+
+	reset.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	reset.Font =
+		Enum.Font.GothamBold
+
+	reset.TextSize =
+		14
+
+	reset.Parent =
+		otherPage
+
+	local resetCorner =
+		Instance.new("UICorner")
+
+	resetCorner.CornerRadius =
+		UDim.new(0,9)
+
+	resetCorner.Parent =
+		reset
+
+	reset.MouseButton1Click:Connect(
+		function()
+			InstaReset()
+		end
+	)
+
+	otherPage.CanvasSize =
+		UDim2.new(
+			0,
+			0,
+			0,
+			120
+		)
+
+	--==================================================
+	-- CREATOR
+	--==================================================
+
+	local creatorPage =
+		Pages.CREATOR
+
+	local creatorTitle =
+		Instance.new("TextLabel")
+
+	creatorTitle.Size =
+		UDim2.new(
+			1,
+			-20,
+			0,
+			45
+		)
+
+	creatorTitle.Position =
+		UDim2.new(
+			0,
+			10,
+			0,
+			10
+		)
+
+	creatorTitle.BackgroundTransparency =
+		1
+
+	creatorTitle.Text =
+		"🌸 CREATOR"
+
+	creatorTitle.TextColor3 =
+		Color3.fromRGB(
+			255,
+			190,
+			255
+		)
+
+	creatorTitle.Font =
+		Enum.Font.GothamBold
+
+	creatorTitle.TextSize =
+		18
+
+	creatorTitle.Parent =
+		creatorPage
+
+	local discord =
+		Instance.new("TextLabel")
+
+	discord.Size =
+		UDim2.new(
+			1,
+			-20,
+			0,
+			40
+		)
+
+	discord.Position =
+		UDim2.new(
+			0,
+			10,
+			0,
+			65
+		)
+
+	discord.BackgroundColor3 =
+		Color3.fromRGB(
+			40,
+			30,
+			48
+		)
+
+	discord.BorderSizePixel =
+		0
+
+	discord.Text =
+		"Discord: mesket122"
+
+	discord.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	discord.Font =
+		Enum.Font.GothamBold
+
+	discord.TextSize =
+		13
+
+	discord.Parent =
+		creatorPage
+
+	local discordCorner =
+		Instance.new("UICorner")
+
+	discordCorner.CornerRadius =
+		UDim.new(0,9)
+
+	discordCorner.Parent =
+		discord
+
+	local telegram =
+		Instance.new("TextLabel")
+
+	telegram.Size =
+		UDim2.new(
+			1,
+			-20,
+			0,
+			40
+		)
+
+	telegram.Position =
+		UDim2.new(
+			0,
+			10,
+			0,
+			115
+		)
+
+	telegram.BackgroundColor3 =
+		Color3.fromRGB(
+			40,
+			30,
+			48
+		)
+
+	telegram.BorderSizePixel =
+		0
+
+	telegram.Text =
+		"Telegram: @gazanbadabum"
+
+	telegram.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	telegram.Font =
+		Enum.Font.GothamBold
+
+	telegram.TextSize =
+		13
+
+	telegram.Parent =
+		creatorPage
+
+	local telegramCorner =
+		Instance.new("UICorner")
+
+	telegramCorner.CornerRadius =
+		UDim.new(0,9)
+
+	telegramCorner.Parent =
+		telegram
+
+	creatorPage.CanvasSize =
+		UDim2.new(
+			0,
+			0,
+			0,
+			170
+		)
+
+	--==================================================
+	-- PERFORMANCE
+	--==================================================
+
+	CreatePerformancePanel()
+end
+
+--==================================================
+-- LOADING
+--==================================================
+
+local function StartLoading()
+
+	local loadingGui =
+		Instance.new("ScreenGui")
+
+	loadingGui.Name =
+		"SakuraLoading"
+
+	loadingGui.IgnoreGuiInset =
+		true
+
+	loadingGui.ResetOnSpawn =
+		false
+
+	loadingGui.Parent =
+		PlayerGui
+
+	local background =
+		Instance.new("Frame")
+
+	background.Size =
+		UDim2.fromScale(
+			1,
+			1
+		)
+
+	background.BackgroundColor3 =
+		Color3.fromRGB(
+			15,
+			10,
+			20
+		)
+
+	background.BorderSizePixel =
+		0
+
+	background.Parent =
+		loadingGui
+
+	local title =
+		Instance.new("TextLabel")
+
+	title.Size =
+		UDim2.new(
+			1,
+			0,
+			0,
+			70
+		)
+
+	title.Position =
+		UDim2.new(
+			0,
+			0,
+			0.5,
+			-55
+		)
+
+	title.BackgroundTransparency =
+		1
+
+	title.Text =
+		"🌸 SAKURA • VIP"
+
+	title.TextColor3 =
+		Color3.fromRGB(
+			255,
+			190,
+			255
+		)
+
+	title.Font =
+		Enum.Font.GothamBold
+
+	title.TextSize =
+		30
+
+	title.Parent =
+		background
+
+	local loading =
+		Instance.new("TextLabel")
+
+	loading.Size =
+		UDim2.new(
+			1,
+			0,
+			0,
+			60
+		)
+
+	loading.Position =
+		UDim2.new(
+			0,
+			0,
+			0.5,
+			5
+		)
+
+	loading.BackgroundTransparency =
+		1
+
+	loading.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	loading.Font =
+		Enum.Font.GothamBold
+
+	loading.TextSize =
+		24
+
+	loading.Parent =
+		background
+
+	local startTime =
+		os.clock()
+
+	while os.clock() - startTime < 3 do
+
+		local remaining =
+			math.max(
+				0,
+				3 -
+				(os.clock() - startTime)
+			)
+
+		loading.Text =
+			string.format(
+				"LOADING %.2f",
+				remaining
+			)
+
+		RunService.RenderStepped:Wait()
+	end
+
+	loadingGui:Destroy()
+end
+
+--==================================================
+-- VIP INTRO
+--==================================================
+
+local function StartVIPIntro()
+
+	local vip =
+		Instance.new("ScreenGui")
+
+	vip.Name =
+		"SakuraVIPIntro"
+
+	vip.IgnoreGuiInset =
+		true
+
+	vip.ResetOnSpawn =
+		false
+
+	vip.Parent =
+		PlayerGui
+
+	local background =
+		Instance.new("Frame")
+
+	background.Size =
+		UDim2.fromScale(
+			1,
+			1
+		)
+
+	background.BackgroundColor3 =
+		Color3.fromRGB(
+			15,
+			10,
+			20
+		)
+
+	background.BorderSizePixel =
+		0
+
+	background.Parent =
+		vip
+
+	local center =
+		Instance.new("TextLabel")
+
+	center.Size =
+		UDim2.new(
+			0,
+			250,
+			0,
+			80
+		)
+
+	center.Position =
+		UDim2.new(
+			0.5,
+			-125,
+			0.5,
+			-40
+		)
+
+	center.BackgroundTransparency =
+		1
+
+	center.Text =
+		"VIP ROOM"
+
+	center.TextColor3 =
+		Color3.fromRGB(
+			255,
+			220,
+			255
+		)
+
+	center.Font =
+		Enum.Font.GothamBold
+
+	center.TextSize =
+		25
+
+	center.Parent =
+		background
+
+	local total = 50
+	local radius = 145
+
+	for i = 1,total do
+
+		local crown =
+			Instance.new("TextLabel")
+
+		crown.Size =
+			UDim2.new(
+				0,
+				38,
+				0,
+				38
+			)
+
+		crown.AnchorPoint =
+			Vector2.new(
+				0.5,
+				0.5
+			)
+
+		crown.BackgroundColor3 =
+			Color3.fromRGB(
+				45,
+				30,
+				55
+			)
+
+		crown.BackgroundTransparency =
+			1
+
+		crown.Text =
+			"👑"
+
+		crown.TextSize =
+			18
+
+		crown.TextColor3 =
+			Color3.fromRGB(
+				255,
+				220,
+				90
+			)
+
+		crown.TextTransparency =
+			1
+
+		crown.Font =
+			Enum.Font.GothamBold
+
+		local angle =
+			(i / total) *
+			math.pi * 2
+
+		crown.Position =
+			UDim2.new(
+				0.5,
+				math.cos(angle) *
+					radius,
+
+				0.5,
+				math.sin(angle) *
+					radius
+			)
+
+		crown.Parent =
+			background
+
+		local crownCorner =
+			Instance.new("UICorner")
+
+		crownCorner.CornerRadius =
+			UDim.new(1,0)
+
+		crownCorner.Parent =
+			crown
+
+		task.wait(0.035)
+
+		crown.TextTransparency =
+			0
+
+		crown.BackgroundTransparency =
+			0.15
+	end
+
+	task.wait(3)
+
+	vip:Destroy()
+end
+
+--==================================================
+-- KEY SCREEN
+--==================================================
+
+local function CreateKeyScreen()
+
+	local gui =
+		Instance.new("ScreenGui")
+
+	gui.Name =
+		"SakuraKey"
+
+	gui.ResetOnSpawn =
+		false
+
+	gui.Parent =
+		PlayerGui
+
+	local frame =
+		Instance.new("Frame")
+
+	frame.Size =
+		UDim2.new(
+			0,
+			330,
+			0,
+			230
+		)
+
+	frame.Position =
+		UDim2.new(
+			0.5,
+			-165,
+			0.5,
+			-115
+		)
+
+	frame.BackgroundColor3 =
+		Color3.fromRGB(
+			24,
+			19,
+			30
+		)
+
+	frame.BorderSizePixel =
+		0
+
+	frame.Parent =
+		gui
+
+	local corner =
+		Instance.new("UICorner")
+
+	corner.CornerRadius =
+		UDim.new(0,14)
+
+	corner.Parent =
+		frame
+
+	local title =
+		Instance.new("TextLabel")
+
+	title.Size =
+		UDim2.new(
+			1,
+			0,
+			0,
+			45
+		)
+
+	title.BackgroundTransparency =
+		1
+
+	title.Text =
+		"🌸 SAKURA • VIP"
+
+	title.TextColor3 =
+		Color3.fromRGB(
+			255,
+			190,
+			255
+		)
+
+	title.Font =
+		Enum.Font.GothamBold
+
+	title.TextSize =
+		18
+
+	title.Parent =
+		frame
+
+	local box =
+		Instance.new("TextBox")
+
+	box.Size =
+		UDim2.new(
+			1,
+			-30,
+			0,
+			40
+		)
+
+	box.Position =
+		UDim2.new(
+			0,
+			15,
+			0,
+			55
+		)
+
+	box.BackgroundColor3 =
+		Color3.fromRGB(
+			40,
+			32,
+			48
+		)
+
+	box.BorderSizePixel =
+		0
+
+	box.PlaceholderText =
+		"Введите ключ..."
+
+	box.Text =
+		""
+
+	box.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	box.PlaceholderColor3 =
+		Color3.fromRGB(
+			160,
+			150,
+			165
+		)
+
+	box.Font =
+		Enum.Font.Gotham
+
+	box.TextSize =
+		14
+
+	box.Parent =
+		frame
+
+	local bc =
+		Instance.new("UICorner")
+
+	bc.CornerRadius =
+		UDim.new(0,8)
+
+	bc.Parent =
+		box
+
+	local check =
+		Instance.new("TextButton")
+
+	check.Size =
+		UDim2.new(
+			1,
+			-30,
+			0,
+			35
+		)
+
+	check.Position =
+		UDim2.new(
+			0,
+			15,
+			0,
+			105
+		)
+
+	check.BackgroundColor3 =
+		Color3.fromRGB(
+			160,
+			75,
+			170
+		)
+
+	check.BorderSizePixel =
+		0
+
+	check.Text =
+		"ПРОВЕРИТЬ КЛЮЧ"
+
+	check.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	check.Font =
+		Enum.Font.GothamBold
+
+	check.TextSize =
+		13
+
+	check.Parent =
+		frame
+
+	local cc =
+		Instance.new("UICorner")
+
+	cc.CornerRadius =
+		UDim.new(0,8)
+
+	cc.Parent =
+		check
+
+	local getKey =
+		Instance.new("TextButton")
+
+	getKey.Size =
+		UDim2.new(
+			1,
+			-30,
+			0,
+			35
+		)
+
+	getKey.Position =
+		UDim2.new(
+			0,
+			15,
+			0,
+			148
+		)
+
+	getKey.BackgroundColor3 =
+		Color3.fromRGB(
+			45,
+			36,
+			55
+		)
+
+	getKey.BorderSizePixel =
+		0
+
+	getKey.Text =
+		"ПОЛУЧИТЬ КЛЮЧ"
+
+	getKey.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	getKey.Font =
+		Enum.Font.GothamBold
+
+	getKey.TextSize =
+		13
+
+	getKey.Parent =
+		frame
+
+	local gc =
+		Instance.new("UICorner")
+
+	gc.CornerRadius =
+		UDim.new(0,8)
+
+	gc.Parent =
+		getKey
+
+	local status =
+		Instance.new("TextLabel")
+
+	status.Size =
+		UDim2.new(
+			1,
+			-20,
+			0,
+			25
+		)
+
+	status.Position =
+		UDim2.new(
+			0,
+			10,
+			1,
+			-28
+		)
+
+	status.BackgroundTransparency =
+		1
+
+	status.Text =
+		""
+
+	status.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	status.Font =
+		Enum.Font.GothamBold
+
+	status.TextSize =
+		12
+
+	status.Parent =
+		frame
+
+	getKey.MouseButton1Click:Connect(
+		function()
+
+			if setclipboard then
+
+				pcall(function()
+					setclipboard(
+						DISCORD_LINK
+					)
+				end)
+			end
+
+			status.Text =
+				"СКОПИРОВАНО"
+
+			status.TextColor3 =
+				Color3.fromRGB(
+					150,
+					255,
+					170
+				)
+		end
+	)
+
+	check.MouseButton1Click:Connect(
+		function()
+
+			if box.Text ~= KEY then
+
+				status.Text =
+					"🤡 WRONG KEY"
+
+				status.TextColor3 =
+					Color3.fromRGB(
+						255,
+						90,
+						90
+					)
+
+				return
+			end
+
+			gui:Destroy()
+
+			StartLoading()
+
+			StartVIPIntro()
+
+			CreateMain()
+
+			Loaded = true
+
+			AddDiscordTag(
+				Character
+			)
+
+			if TracersEnabled then
+				UpdateTracers()
+			end
+		end
+	)
+end
+
+--==================================================
+-- TERMS
+--==================================================
+
+local function CreateTermsScreen()
+
+	local gui =
+		Instance.new("ScreenGui")
+
+	gui.Name =
+		"SakuraTerms"
+
+	gui.IgnoreGuiInset =
+		true
+
+	gui.ResetOnSpawn =
+		false
+
+	gui.Parent =
+		PlayerGui
+
+	local frame =
+		Instance.new("Frame")
+
+	frame.Size =
+		UDim2.new(
+			0,
+			360,
+			0,
+			330
+		)
+
+	frame.Position =
+		UDim2.new(
+			0.5,
+			-180,
+			0.5,
+			-165
+		)
+
+	frame.BackgroundColor3 =
+		Color3.fromRGB(
+			24,
+			19,
+			30
+		)
+
+	frame.BorderSizePixel =
+		0
+
+	frame.Parent =
+		gui
+
+	local corner =
+		Instance.new("UICorner")
+
+	corner.CornerRadius =
+		UDim.new(0,15)
+
+	corner.Parent =
+		frame
+
+	local title =
+		Instance.new("TextLabel")
+
+	title.Size =
+		UDim2.new(
+			1,
+			-20,
+			0,
+			45
+		)
+
+	title.Position =
+		UDim2.new(
+			0,
+			10,
+			0,
+			5
+		)
+
+	title.BackgroundTransparency =
+		1
+
+	title.Text =
+		"🌸 ПЕРЕД ЗАПУСКОМ"
+
+	title.TextColor3 =
+		Color3.fromRGB(
+			255,
+			190,
+			255
+		)
+
+	title.Font =
+		Enum.Font.GothamBold
+
+	title.TextSize =
+		19
+
+	title.Parent =
+		frame
+
+	local question =
+		Instance.new("TextLabel")
+
+	question.Size =
+		UDim2.new(
+			1,
+			-30,
+			0,
+			55
+		)
+
+	question.Position =
+		UDim2.new(
+			0,
+			15,
+			0,
+			52
+		)
+
+	question.BackgroundTransparency =
+		1
+
+	question.Text =
+		"Вы согласны с условиями использования скрипта?"
+
+	question.TextWrapped =
+		true
+
+	question.TextColor3 =
+		Color3.fromRGB(
+			240,
+			240,
+			240
+		)
+
+	question.Font =
+		Enum.Font.Gotham
+
+	question.TextSize =
+		14
+
+	question.Parent =
+		frame
+
+	local agree =
+		Instance.new("TextButton")
+
+	agree.Size =
+		UDim2.new(
+			1,
+			-30,
+			0,
+			42
+		)
+
+	agree.Position =
+		UDim2.new(
+			0,
+			15,
+			0,
+			115
+		)
+
+	agree.BackgroundColor3 =
+		Color3.fromRGB(
+			45,
+			36,
+			55
+		)
+
+	agree.BorderSizePixel =
+		0
+
+	agree.Text =
+		"☐  Я принимаю условия"
+
+	agree.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	agree.Font =
+		Enum.Font.GothamBold
+
+	agree.TextSize =
+		13
+
+	agree.Parent =
+		frame
+
+	local ac =
+		Instance.new("UICorner")
+
+	ac.CornerRadius =
+		UDim.new(0,9)
+
+	ac.Parent =
+		agree
+
+	local view =
+		Instance.new("TextButton")
+
+	view.Size =
+		UDim2.new(
+			1,
+			-30,
+			0,
+			42
+		)
+
+	view.Position =
+		UDim2.new(
+			0,
+			15,
+			0,
+			165
+		)
+
+	view.BackgroundColor3 =
+		Color3.fromRGB(
+			55,
+			42,
+			65
+		)
+
+	view.BorderSizePixel =
+		0
+
+	view.Text =
+		"ПОСМОТРЕТЬ УСЛОВИЯ"
+
+	view.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	view.Font =
+		Enum.Font.GothamBold
+
+	view.TextSize =
+		13
+
+	view.Parent =
+		frame
+
+	local vc =
+		Instance.new("UICorner")
+
+	vc.CornerRadius =
+		UDim.new(0,9)
+
+	vc.Parent =
+		view
+
+	local start =
+		Instance.new("TextButton")
+
+	start.Size =
+		UDim2.new(
+			1,
+			-30,
+			0,
+			42
+		)
+
+	start.Position =
+		UDim2.new(
+			0,
+			15,
+			0,
+			215
+		)
+
+	start.BackgroundColor3 =
+		Color3.fromRGB(
+			160,
+			75,
+			170
+		)
+
+	start.BorderSizePixel =
+		0
+
+	start.Text =
+		"ЗАПУСТИТЬ"
+
+	start.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	start.Font =
+		Enum.Font.GothamBold
+
+	start.TextSize =
+		14
+
+	start.Parent =
+		frame
+
+	local sc =
+		Instance.new("UICorner")
+
+	sc.CornerRadius =
+		UDim.new(0,9)
+
+	sc.Parent =
+		start
+
+	local status =
+		Instance.new("TextLabel")
+
+	status.Size =
+		UDim2.new(
+			1,
+			-20,
+			0,
+			25
+		)
+
+	status.Position =
+		UDim2.new(
+			0,
+			10,
+			1,
+			-28
+		)
+
+	status.BackgroundTransparency =
+		1
+
+	status.Text =
+		""
+
+	status.TextColor3 =
+		Color3.fromRGB(
+			255,
+			90,
+			90
+		)
+
+	status.Font =
+		Enum.Font.GothamBold
+
+	status.TextSize =
+		11
+
+	status.Parent =
+		frame
+
+	-- CHECKBOX
+	agree.MouseButton1Click:Connect(
+		function()
+
+			TermsAccepted =
+				not TermsAccepted
+
+			if TermsAccepted then
+
+				agree.Text =
+					"☑  Я принимаю условия"
+
+				agree.BackgroundColor3 =
+					Color3.fromRGB(
+						45,
+						115,
+						70
+					)
+
+			else
+
+				agree.Text =
+					"☐  Я принимаю условия"
+
+				agree.BackgroundColor3 =
+					Color3.fromRGB(
+						45,
+						36,
+						55
+					)
+			end
+
+			status.Text = ""
+		end
+	)
+
+	-- VIEW TERMS
+	view.MouseButton1Click:Connect(
+		function()
+
+			local terms =
+				Instance.new("Frame")
+
+			terms.Size =
+				UDim2.new(
+					0,
+					330,
+					0,
+					300
+				)
+
+			terms.Position =
+				UDim2.new(
+					0.5,
+					-165,
+					0.5,
+					-150
+				)
+
+			terms.BackgroundColor3 =
+				Color3.fromRGB(
+					30,
+					23,
+					37
+				)
+
+			terms.BorderSizePixel =
+				0
+
+			terms.ZIndex = 20
+
+			terms.Parent =
+				gui
+
+			local tc =
+				Instance.new("UICorner")
+
+			tc.CornerRadius =
+				UDim.new(0,13)
+
+			tc.Parent =
+				terms
+
+			local termTitle =
+				Instance.new("TextLabel")
+
+			termTitle.Size =
+				UDim2.new(
+					1,
+					-20,
+					0,
+					40
+				)
+
+			termTitle.Position =
+				UDim2.new(
+					0,
+					10,
+					0,
+					10
+				)
+
+			termTitle.BackgroundTransparency =
+				1
+
+			termTitle.Text =
+				"УСЛОВИЯ ИСПОЛЬЗОВАНИЯ"
+
+			termTitle.TextColor3 =
+				Color3.fromRGB(
+					255,
+					190,
+					255
+				)
+
+			termTitle.Font =
+				Enum.Font.GothamBold
+
+			termTitle.TextSize =
+				15
+
+			termTitle.ZIndex =
+				21
+
+			termTitle.Parent =
+				terms
+
+			local text =
+				Instance.new("TextLabel")
+
+			text.Size =
+				UDim2.new(
+					1,
+					-30,
+					0,
+					180
+				)
+
+			text.Position =
+				UDim2.new(
+					0,
+					15,
+					0,
+					55
+				)
+
+			text.BackgroundTransparency =
+				1
+
+			text.TextWrapped =
+				true
+
+			text.TextYAlignment =
+				Enum.TextYAlignment.Top
+
+			text.TextXAlignment =
+				Enum.TextXAlignment.Left
+
+			text.Text =
+				"Все скрипты могут нарушать правила игры." ..
+				"\n\n" ..
+				"Использование скрипта может привести " ..
+				"к блокировке аккаунта или другим " ..
+				"последствиям со стороны игры." ..
+				"\n\n" ..
+				"Вы самостоятельно принимаете решение " ..
+				"об использовании скрипта и несёте " ..
+				"ответственность за возможные последствия."
+
+			text.TextColor3 =
+				Color3.fromRGB(
+					235,
+					235,
+					235
+				)
+
+			text.Font =
+				Enum.Font.Gotham
+
+			text.TextSize =
+				13
+
+			text.ZIndex =
+				21
+
+			text.Parent =
+				terms
+
+			local closeTerms =
+				Instance.new("TextButton")
+
+			closeTerms.Size =
+				UDim2.new(
+					1,
+					-30,
+					0,
+					38
+				)
+
+			closeTerms.Position =
+				UDim2.new(
+					0,
+					15,
+					1,
+					-50
+				)
+
+			closeTerms.BackgroundColor3 =
+				Color3.fromRGB(
+					160,
+					75,
+					170
+				)
+
+			closeTerms.BorderSizePixel =
+				0
+
+			closeTerms.Text =
+				"ПОНЯТНО"
+
+			closeTerms.TextColor3 =
+				Color3.fromRGB(
+					255,
+					255,
+					255
+				)
+
+			closeTerms.Font =
+				Enum.Font.GothamBold
+
+			closeTerms.TextSize =
+				13
+
+			closeTerms.ZIndex =
+				21
+
+			closeTerms.Parent =
+				terms
+
+			local ctc =
+				Instance.new("UICorner")
+
+			ctc.CornerRadius =
+				UDim.new(0,8)
+
+			ctc.Parent =
+				closeTerms
+
+			closeTerms.MouseButton1Click:Connect(
+				function()
+					terms:Destroy()
+				end
+			)
+		end
+	)
+
+	-- START
+	start.MouseButton1Click:Connect(
+		function()
+
+			if not TermsAccepted then
+
+				status.Text =
+					"СОГЛАСИТЕСЬ С УСЛОВИЯМИ"
+
+				return
+			end
+
+			gui:Destroy()
+
+			CreateKeyScreen()
+		end
+	)
+end
+
+--==================================================
+-- DEVICE SELECTOR
+--==================================================
+
+local function CreateDeviceSelector()
+
+	local gui =
+		Instance.new("ScreenGui")
+
+	gui.Name =
+		"SakuraDevice"
+
+	gui.ResetOnSpawn =
+		false
+
+	gui.Parent =
+		PlayerGui
+
+	local frame =
+		Instance.new("Frame")
+
+	frame.Size =
+		UDim2.new(
+			0,
+			330,
+			0,
+			190
+		)
+
+	frame.Position =
+		UDim2.new(
+			0.5,
+			-165,
+			0.5,
+			-95
+		)
+
+	frame.BackgroundColor3 =
+		Color3.fromRGB(
+			24,
+			19,
+			30
+		)
+
+	frame.BorderSizePixel =
+		0
+
+	frame.Parent =
+		gui
+
+	local corner =
+		Instance.new("UICorner")
+
+	corner.CornerRadius =
+		UDim.new(0,14)
+
+	corner.Parent =
+		frame
+
+	local title =
+		Instance.new("TextLabel")
+
+	title.Size =
+		UDim2.new(
+			1,
+			0,
+			0,
+			45
+		)
+
+	title.BackgroundTransparency =
+		1
+
+	title.Text =
+		"🌸 SELECT DEVICE"
+
+	title.TextColor3 =
+		Color3.fromRGB(
+			255,
+			190,
+			255
+		)
+
+	title.Font =
+		Enum.Font.GothamBold
+
+	title.TextSize =
+		18
+
+	title.Parent =
+		frame
+
+	local mobile =
+		Instance.new("TextButton")
+
+	mobile.Size =
+		UDim2.new(
+			1,
+			-30,
+			0,
+			42
+		)
+
+	mobile.Position =
+		UDim2.new(
+			0,
+			15,
+			0,
+			58
+		)
+
+	mobile.BackgroundColor3 =
+		PINK_COLOR
+
+	mobile.BorderSizePixel =
+		0
+
+	mobile.Text =
+		"📱 MOBILE"
+
+	mobile.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	mobile.Font =
+		Enum.Font.GothamBold
+
+	mobile.TextSize =
+		14
+
+	mobile.Parent =
+		frame
+
+	local mc =
+		Instance.new("UICorner")
+
+	mc.CornerRadius =
+		UDim.new(0,9)
+
+	mc.Parent =
+		mobile
+
+	local computer =
+		Instance.new("TextButton")
+
+	computer.Size =
+		UDim2.new(
+			1,
+			-30,
+			0,
+			42
+		)
+
+	computer.Position =
+		UDim2.new(
+			0,
+			15,
+			0,
+			108
+		)
+
+	computer.BackgroundColor3 =
+		OFF_COLOR
+
+	computer.BorderSizePixel =
+		0
+
+	computer.Text =
+		"💻 COMPUTER"
+
+	computer.TextColor3 =
+		Color3.fromRGB(
+			255,
+			255,
+			255
+		)
+
+	computer.Font =
+		Enum.Font.GothamBold
+
+	computer.TextSize =
+		14
+
+	computer.Parent =
+		frame
+
+	local cc =
+		Instance.new("UICorner")
+
+	cc.CornerRadius =
+		UDim.new(0,9)
+
+	cc.Parent =
+		computer
+
+	mobile.MouseButton1Click:Connect(
+		function()
+
+			gui:Destroy()
+
+			CreateTermsScreen()
+		end
+	)
+
+	computer.MouseButton1Click:Connect(
+		function()
+
+			computer.Text =
+				"💻 COMING SOON"
+
+			task.wait(1)
+
+			gui:Destroy()
+
+			CreateTermsScreen()
+		end
+	)
+end
+
+--==================================================
+-- CHARACTER EVENTS
+--==================================================
+
+LP.CharacterAdded:Connect(
+	function(newCharacter)
+
+		Character =
+			newCharacter
+
+		Humanoid =
+			Character:WaitForChild(
+				"Humanoid"
+			)
+
+		Root =
+			Character:WaitForChild(
+				"HumanoidRootPart"
+			)
+
+		task.wait(0.3)
+
+		if Loaded then
+			ShowResetComplete()
+		end
+
+		task.wait(0.2)
+
+		if AntiDieEnabled then
+			ApplyAntiDie()
+		end
+
+		AddDiscordTag(
+			Character
+		)
+
+		if TracersEnabled then
+			ClearTracers()
+			task.wait(0.1)
+			UpdateTracers()
+		end
+
+		if ESPEnabled then
+			UpdateESP()
+		end
+	end
+)
+
+Players.PlayerAdded:Connect(
+	function(player)
+
+		player.CharacterAdded:Connect(
+			function()
+
+				task.wait(0.3)
+
+				if ESPEnabled then
+					CreateESP(player)
+				end
+
+				if TracersEnabled then
+					CreateTracer(player)
+				end
+			end
+		)
+	end
+)
+
+Players.PlayerRemoving:Connect(
+	function(player)
+
+		RemovePlayerTracer(player)
+	end
+)
+
+--==================================================
+-- UPDATE
+--==================================================
+
+local lastUpdate = 0
+
+RunService.RenderStepped:Connect(
+	function()
+
+		if not Loaded then
+			return
+		end
+
+		if not Character
+			or not Character.Parent then
+			return
+		end
+
+		if BatEnabled then
+			UpdateBat()
+		end
+
+		if AntiDieEnabled then
+			ApplyAntiDie()
+		end
+
+		if os.clock() - lastUpdate >= 0.08 then
+
+			lastUpdate =
+				os.clock()
+
+			if ESPEnabled then
+				UpdateESP()
+			end
+
+			if TracersEnabled then
+				UpdateTracers()
+			end
+		end
+	end
+)
+
+--==================================================
+-- START
+--==================================================
+
+CreateDeviceSelector()
